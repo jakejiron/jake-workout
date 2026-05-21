@@ -624,6 +624,15 @@ function saveSession() {
   const dayData = PROGRAM[selectedDay];
   if (!dayData || !dayData.exercises) return;
 
+  // Check if already logged today for this day
+  const today = new Date().toDateString();
+  const alreadyLogged = state.sessions.some(s => {
+    return s.day === selectedDay && new Date(s.date).toDateString() === today;
+  });
+  if (alreadyLogged) {
+    if (!confirm(`You already logged ${DAYS[selectedDay].name} today. Save another entry anyway?`)) return;
+  }
+
   const allExercises = [...(dayData.core || []), ...dayData.exercises];
   const exercises = [];
   let totalReps = 0;
@@ -683,7 +692,8 @@ function saveSession() {
   checkOverload(session);
 
   saveState(state);
-  showToast('Session saved!');
+  showToast('✓ Session saved!');
+  clearForm();
 }
 
 // ─── PROGRESSIVE OVERLOAD CHECK ────────────────────────────────────────────────
@@ -757,12 +767,15 @@ function closeModal() {
 
 function clearForm() {
   const dayData = PROGRAM[selectedDay];
-  if (!dayData?.exercises) return;
-  dayData.exercises.forEach(ex => {
+  if (!dayData) return;
+  const allExercises = [...(dayData.core || []), ...(dayData.exercises || [])];
+  allExercises.forEach(ex => {
     for (let s = 1; s <= ex.sets; s++) {
       const r = document.getElementById(`${ex.id}-reps-${s}`);
+      const a = document.getElementById(`${ex.id}-asst-${s}`);
       const p = document.getElementById(`${ex.id}-rpe-${s}`);
       if (r) r.value = '';
+      if (a) a.value = '';
       if (p) p.value = '';
     }
     const w = document.getElementById(`${ex.id}-weight`);
@@ -785,20 +798,31 @@ function renderHistory() {
   list.innerHTML = state.sessions.map((s, idx) => {
     const hasPR = s.exercises?.some(e => e.isPR);
     const exSummary = s.exercises?.map(e => `<span style="font-size:12px;">${e.name} ${e.isPR ? '<span class="pr-tag">PR</span>' : ''}</span>`).join('  ') || '';
-    return `<div class="history-item" id="hist-${idx}" onclick="toggleHistory(${idx})">
-      <div class="history-header">
+    return `<div class="history-item" id="hist-${idx}">
+      <div class="history-header" onclick="toggleHistory(${idx})" style="cursor:pointer;">
         <div>
           <div class="history-day">${s.dayName} — ${s.type} ${hasPR ? '<span class="pr-tag">PR</span>' : ''}</div>
           <div class="history-date">${formatDate(s.date)}</div>
         </div>
-        <span style="color:var(--text3);font-size:20px;">›</span>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button onclick="event.stopPropagation();deleteSession(${idx})" style="background:none;border:none;cursor:pointer;padding:4px;color:var(--text3);font-size:16px;line-height:1;border-radius:4px;transition:color 0.15s;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text3)'" title="Delete session">🗑</button>
+          <span style="color:var(--text3);font-size:20px;">›</span>
+        </div>
       </div>
-      ${s.exercises ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">${exSummary}</div>` : ''}
+      ${s.exercises ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;" onclick="toggleHistory(${idx})" style="cursor:pointer;">${exSummary}</div>` : ''}
       <div class="history-detail" id="histdetail-${idx}">
         ${buildHistoryDetail(s)}
       </div>
     </div>`;
   }).join('');
+}
+
+function deleteSession(idx) {
+  if (!confirm('Delete this session? This cannot be undone.')) return;
+  state.sessions.splice(idx, 1);
+  saveState(state);
+  renderHistory();
+  showToast('Session deleted');
 }
 
 function buildHistoryDetail(s) {
