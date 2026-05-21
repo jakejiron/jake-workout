@@ -108,9 +108,9 @@
   .exercise-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 0.5px; color: var(--text); }
   .exercise-note-text { font-size: 12px; color: var(--text3); margin-top: 2px; }
 
-  .set-header { display: grid; grid-template-columns: 40px 1fr 1fr 60px; gap: 8px; margin-bottom: 6px; }
+  .set-header { display: grid; grid-template-columns: 40px 1fr 1fr 1fr; gap: 8px; margin-bottom: 6px; }
   .set-header span { font-size: 10px; color: var(--text3); font-family: 'Barlow Condensed', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
-  .set-row { display: grid; grid-template-columns: 40px 1fr 1fr 60px; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .set-row { display: grid; grid-template-columns: 40px 1fr 1fr 1fr; gap: 8px; align-items: center; margin-bottom: 6px; }
   .set-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; color: var(--text3); letter-spacing: 1px; }
   .set-input, .rpe-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 15px; width: 100%; font-family: 'Barlow', sans-serif; font-weight: 600; color: var(--text); transition: border-color 0.15s; }
   .set-input:focus { outline: none; border-color: var(--azul); background: #fff; }
@@ -560,15 +560,15 @@ function buildProgram() {
 function buildExerciseBlock(ex, currentLabel, prog) {
   const typeClass = ex.type === 'compound' ? 'compound' : ex.type === 'isolation' ? 'isolation' : 'core-ex';
   let setsHTML = `<div class="set-header">
-    <span></span><span>Reps</span><span>RPE</span><span></span>
+    <span></span><span>Reps</span><span>Asst</span><span>RPE</span>
   </div>`;
   for (let s = 1; s <= ex.sets; s++) {
     const targetReps = ex.unit === 'sec' ? `${ex.reps}s` : ex.reps;
     setsHTML += `<div class="set-row">
       <span class="set-label">S${s}</span>
       <input class="set-input" type="number" placeholder="${targetReps}" id="${ex.id}-reps-${s}" min="0" max="99">
+      <input class="set-input asst-input" type="number" placeholder="0" id="${ex.id}-asst-${s}" min="0" max="99" style="border-color:var(--gold-border);background:var(--gold-light);">
       <input class="rpe-input" type="number" placeholder="—" id="${ex.id}-rpe-${s}" min="1" max="10">
-      <div style="text-align:right;" id="${ex.id}-result-${s}"></div>
     </div>`;
   }
 
@@ -636,12 +636,15 @@ function saveSession() {
 
     for (let s = 1; s <= ex.sets; s++) {
       const repsEl = document.getElementById(`${ex.id}-reps-${s}`);
+      const asstEl = document.getElementById(`${ex.id}-asst-${s}`);
       const rpeEl = document.getElementById(`${ex.id}-rpe-${s}`);
       const reps = repsEl ? parseInt(repsEl.value) || 0 : 0;
+      const asst = asstEl ? parseInt(asstEl.value) || 0 : 0;
+      const unassisted = Math.max(0, reps - asst);
       const rpe = rpeEl ? parseInt(rpeEl.value) || 0 : 0;
-      sets.push({ reps, rpe });
+      sets.push({ reps, asst, unassisted, rpe });
       if (reps > 0) { totalRpe += rpe; validSets++; }
-      if (reps < ex.reps) allTargetMet = false;
+      if (unassisted < ex.reps) allTargetMet = false;
       totalReps += reps;
     }
 
