@@ -190,7 +190,7 @@
   @media (max-width: 500px) {
     .nav-tabs { gap: 2px; }
     .nav-tab { padding: 6px 10px; font-size: 11px; }
-    .set-row, .set-header { grid-template-columns: 32px 1fr 1fr 50px; }
+    .set-row, .set-header { grid-template-columns: 32px 1fr 1fr 1fr; }
     .day-btn .day-name { font-size: 11px; }
   }
 </style>
@@ -805,7 +805,10 @@ function buildHistoryDetail(s) {
   if (!s.exercises) return s.notes ? `<div class="history-notes">${s.notes}</div>` : '';
   let html = s.exercises.map(ex => {
     const vol = ex.sets.reduce((a, s) => a + s.reps, 0);
-    const setsStr = ex.sets.map((s, i) => `<span style="font-size:12px;font-family:'Barlow Condensed',sans-serif;color:var(--text3);">S${i+1}: ${s.reps}r @${s.rpe}</span>`).join(' · ');
+    const setsStr = ex.sets.map((s, i) => {
+      const asstStr = s.asst > 0 ? ` <span style="color:var(--gold);font-size:11px;">(${s.asst}A)</span>` : '';
+      return `<span style="font-size:12px;font-family:'Barlow Condensed',sans-serif;color:var(--text3);">S${i+1}: ${s.reps}r${asstStr} @${s.rpe}</span>`;
+    }).join(' · ');
     return `<div style="padding:8px 0;border-bottom:1px solid var(--border);">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:var(--text);">${ex.name} ${ex.isPR ? '<span class="pr-tag">PR</span>' : ''}</span>
